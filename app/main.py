@@ -247,8 +247,8 @@ def clr1_parse(data: ParseInput):
 
     return clr.parse_string(action, goto, data.input_string)
 
+# LALR(1) #
 
-# ---------------- LALR(1) ---------------- #
 @app.post("/lalr1-states")
 def lalr1_states(data: GrammarInput):
     g, err = validate_and_continue(data.grammar)
