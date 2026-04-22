@@ -249,3 +249,71 @@ def clr1_parse(data: ParseInput):
 
 
 # ---------------- LALR(1) ---------------- #
+@app.post("/lalr1-states")
+def lalr1_states(data: GrammarInput):
+    g, err = validate_and_continue(data.grammar)
+    if err: return err
+
+    g.augment_grammar()
+
+    ff = FirstFollow(g)
+    ff.compute_first()
+
+    lalr = LALR1(g, ff)
+    lalr.build_from_clr()
+
+    result = []
+    for i, state in enumerate(lalr.merged_states):
+        items = [
+            {
+                "left": l,
+                "right": list(r),
+                "dot": d,
+                "lookahead": la
+            }
+            for (l, r, d, la) in state
+        ]
+        result.append({"state": i, "items": items})
+
+    return {"states": result}
+
+@app.post("/lalr1-table")
+def lalr1_table(data: GrammarInput):
+    g, err = validate_and_continue(data.grammar)
+    if err: return err
+
+    g.augment_grammar()
+
+    ff = FirstFollow(g)
+    ff.compute_first()
+
+    lalr = LALR1(g, ff)
+    lalr.build_from_clr()
+
+    action, goto, conflicts = lalr.build_parsing_table()
+
+    return {
+        "action": action,
+        "goto": goto,
+        "conflicts": conflicts
+    }
+
+@app.post("/lalr1-parse")
+def lalr1_parse(data: ParseInput):
+    g, err = validate_and_continue(data.grammar)
+    if err: return err
+
+    g.augment_grammar()
+
+    ff = FirstFollow(g)
+    ff.compute_first()
+
+    lalr = LALR1(g, ff)
+    lalr.build_from_clr()
+
+    action, goto, conflicts = lalr.build_parsing_table()
+
+    if conflicts:
+        return {"error": "Grammar is not LALR(1)", "conflicts": conflicts}
+
+    return lalr.parse_string(action, goto, data.input_string)
